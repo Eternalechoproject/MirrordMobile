@@ -1,5 +1,11 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# Environment variables - CRITICAL
+.env
+.env*.local
+.env.production
+.env.development
+
 # dependencies
 node_modules/
 
@@ -30,8 +36,12 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
-
 # typescript
 *.tsbuildinfo
+
+# API Keys - extra safety
+*apikey*
+*api_key*
+*secret*
+!.env.example
+.vercel
