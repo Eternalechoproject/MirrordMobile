@@ -14,7 +14,8 @@ import {
   ImageBackground,
   Dimensions,
   SafeAreaView,
-  Keyboard
+  Keyboard,
+  Linking
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { MoodScreen, GoalScreen } from './screens';
@@ -240,6 +241,24 @@ function LandingScreen({ navigation }) {
           >
             <Text style={styles.ctaButtonText}>Start Conversation →</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Legal Links Section */}
+        <View style={styles.legalSection}>
+          <View style={styles.legalLinks}>
+            <TouchableOpacity onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal#terms')}>
+              <Text style={styles.legalLink}>Terms of Service</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalSeparator}>•</Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal#privacy')}>
+              <Text style={styles.legalLink}>Privacy Policy</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalSeparator}>•</Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal#disclaimer')}>
+              <Text style={styles.legalLink}>Medical Disclaimer</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.copyright}>© 2024 MIRRORD LLC. All rights reserved.</Text>
         </View>
 
         <StatusBar style="light" />
@@ -630,6 +649,38 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  
+  // Legal Section
+  legalSection: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginBottom: 20,
+  },
+  legalLink: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    textDecorationLine: 'underline',
+    paddingHorizontal: 5,
+  },
+  legalSeparator: {
+    color: 'rgba(255, 255, 255, 0.3)',
+    fontSize: 14,
+    paddingHorizontal: 5,
+  },
+  copyright: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 12,
+    textAlign: 'center',
   },
   
   // Form styles
