@@ -1,0 +1,218 @@
+// Add this to your App.js after the imports
+import { Linking } from 'react-native';
+
+// Update your LandingScreen to include legal links at the bottom
+function LandingScreen({ navigation }) {
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView 
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        {/* ... existing hero section and other content ... */}
+
+        {/* Footer CTA */}
+        <View style={styles.footerSection}>
+          <Text style={styles.footerTitle}>Ready to talk?</Text>
+          <TouchableOpacity 
+            style={styles.ctaButton}
+            onPress={() => navigation.navigate('Name')}
+          >
+            <Text style={styles.ctaButtonText}>Start Conversation →</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Legal Links Section - ADD THIS */}
+        <View style={styles.legalSection}>
+          <View style={styles.legalLinks}>
+            <TouchableOpacity onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal#terms')}>
+              <Text style={styles.legalLink}>Terms of Service</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalSeparator}>•</Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal#privacy')}>
+              <Text style={styles.legalLink}>Privacy Policy</Text>
+            </TouchableOpacity>
+            <Text style={styles.legalSeparator}>•</Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal#disclaimer')}>
+              <Text style={styles.legalLink}>Medical Disclaimer</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.copyright}>© 2024 MIRRORD LLC. All rights reserved.</Text>
+        </View>
+
+        <StatusBar style="light" />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+// Add these styles to your StyleSheet
+const styles = StyleSheet.create({
+  // ... existing styles ...
+  
+  // Legal Section Styles - ADD THESE
+  legalSection: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginBottom: 20,
+  },
+  legalLink: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    textDecorationLine: 'underline',
+    paddingHorizontal: 5,
+  },
+  legalSeparator: {
+    color: 'rgba(255, 255, 255, 0.3)',
+    fontSize: 14,
+    paddingHorizontal: 5,
+  },
+  copyright: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+});
+
+// Also add a Settings/About screen with legal links
+function SettingsScreen({ navigation }) {
+  return (
+    <View style={styles.container}>
+      <SafeAreaView style={styles.settingsSafeArea}>
+        <View style={styles.settingsHeader}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backButton}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.settingsTitle}>Settings</Text>
+        </View>
+        
+        <ScrollView style={styles.settingsContent}>
+          <View style={styles.settingsSection}>
+            <Text style={styles.sectionHeader}>LEGAL</Text>
+            
+            <TouchableOpacity 
+              style={styles.settingsRow}
+              onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal#terms')}
+            >
+              <Text style={styles.settingsLabel}>Terms of Service</Text>
+              <Text style={styles.settingsChevron}>›</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.settingsRow}
+              onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal#privacy')}
+            >
+              <Text style={styles.settingsLabel}>Privacy Policy</Text>
+              <Text style={styles.settingsChevron}>›</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.settingsRow}
+              onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal#disclaimer')}
+            >
+              <Text style={styles.settingsLabel}>Medical Disclaimer</Text>
+              <Text style={styles.settingsChevron}>›</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.settingsSection}>
+            <Text style={styles.sectionHeader}>SUPPORT</Text>
+            
+            <TouchableOpacity 
+              style={styles.settingsRow}
+              onPress={() => Linking.openURL('mailto:support@mirrord.app')}
+            >
+              <Text style={styles.settingsLabel}>Contact Support</Text>
+              <Text style={styles.settingsChevron}>›</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.settingsSection}>
+            <Text style={styles.versionText}>MIRRORD v1.0.0</Text>
+            <Text style={styles.copyrightSettings}>© 2024 MIRRORD LLC</Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+// Settings screen styles
+const settingsStyles = {
+  settingsSafeArea: {
+    flex: 1,
+  },
+  settingsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  backButton: {
+    color: '#ffd700',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  settingsTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700',
+    marginLeft: 20,
+  },
+  settingsContent: {
+    flex: 1,
+  },
+  settingsSection: {
+    marginTop: 30,
+    paddingHorizontal: 20,
+  },
+  sectionHeader: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginBottom: 10,
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  settingsLabel: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  settingsChevron: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 20,
+  },
+  versionText: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  copyrightSettings: {
+    color: 'rgba(255, 255, 255, 0.3)',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+};
+
+// Add Settings to your navigation stack
+<Stack.Screen name="Settings" component={SettingsScreen} />
