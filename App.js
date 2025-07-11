@@ -20,6 +20,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { MoodScreen, GoalScreen } from './screens';
 import { PaywallScreen } from './PaywallScreen';
+import { EmailScreen } from './EmailScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Stack = createStackNavigator();
@@ -139,7 +140,7 @@ function LandingScreen({ navigation }) {
             <Text style={styles.heroSubtitle}>A grounded space for men who don't usually talk.</Text>
             <TouchableOpacity 
               style={styles.ctaButton}
-              onPress={() => navigation.navigate('Name')}
+              onPress={() => navigation.navigate('Email')}
             >
               <Text style={styles.ctaButtonText}>Start Conversation</Text>
             </TouchableOpacity>
@@ -254,7 +255,7 @@ function LandingScreen({ navigation }) {
           <Text style={styles.footerTitle}>Ready to talk?</Text>
           <TouchableOpacity 
             style={styles.ctaButton}
-            onPress={() => navigation.navigate('Name')}
+            onPress={() => navigation.navigate('Email')}
           >
             <Text style={styles.ctaButtonText}>Start Conversation →</Text>
           </TouchableOpacity>
@@ -285,8 +286,9 @@ function LandingScreen({ navigation }) {
 }
 
 // Name Screen
-function NameScreen({ navigation }) {
+function NameScreen({ navigation, route }) {
   const [name, setName] = useState('');
+  const email = route.params?.email;
   
   return (
     <ImageBackground 
@@ -306,7 +308,7 @@ function NameScreen({ navigation }) {
         />
         <TouchableOpacity 
           style={[styles.button, !name && styles.buttonDisabled]}
-          onPress={() => name && navigation.navigate('Mood', { name })}
+          onPress={() => name && navigation.navigate('Mood', { name, email })}
           disabled={!name}
         >
           <Text style={styles.buttonText}>Next</Text>
@@ -318,7 +320,7 @@ function NameScreen({ navigation }) {
 
 // Claude-style Chat Screen with Subscription Logic
 function ChatScreen({ route, navigation }) {
-  const { name, mood, goal } = route.params;
+  const { name, mood, goal, email } = route.params;
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -384,6 +386,7 @@ function ChatScreen({ route, navigation }) {
           history: conversationHistory,
           username: name,
           userId: userId,
+          email: email,
           mood,
           goal 
         })
@@ -528,6 +531,7 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Landing" component={LandingScreen} />
+        <Stack.Screen name="Email" component={EmailScreen} />
         <Stack.Screen name="Name" component={NameScreen} />
         <Stack.Screen name="Mood" component={MoodScreen} />
         <Stack.Screen name="Goal" component={GoalScreen} />

@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import Slider from '@react-native-community/slider';
 
 // Mood Screen
-export function MoodScreen({ navigation }) {
+export function MoodScreen({ navigation, route }) {
   const [mood, setMood] = useState(5);
   
   return (
@@ -23,7 +23,11 @@ export function MoodScreen({ navigation }) {
       />
       <TouchableOpacity 
         style={styles.button}
-        onPress={() => navigation.navigate('Goal', { mood })}
+        onPress={() => navigation.navigate('Goal', { 
+          name: route.params.name,
+          mood: mood,
+          email: route.params.email 
+        })}
       >
         <Text style={styles.buttonText}>Next</Text>
       </TouchableOpacity>
@@ -51,8 +55,10 @@ export function GoalScreen({ navigation, route }) {
             key={goal.id}
             style={styles.goalCard}
             onPress={() => navigation.navigate('Chat', { 
+              name: route.params.name,
               mood: route.params.mood,
-              goal: goal.id 
+              goal: goal.id,
+              email: route.params.email
             })}
           >
             <Text style={styles.goalText}>{goal.title}</Text>
