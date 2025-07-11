@@ -246,15 +246,15 @@ function LandingScreen({ navigation }) {
         {/* Legal Links Section */}
         <View style={styles.legalSection}>
           <View style={styles.legalLinks}>
-            <TouchableOpacity onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal#terms')}>
+            <TouchableOpacity onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal.html#terms')}>
               <Text style={styles.legalLink}>Terms of Service</Text>
             </TouchableOpacity>
             <Text style={styles.legalSeparator}>•</Text>
-            <TouchableOpacity onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal#privacy')}>
+            <TouchableOpacity onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal.html#privacy')}>
               <Text style={styles.legalLink}>Privacy Policy</Text>
             </TouchableOpacity>
             <Text style={styles.legalSeparator}>•</Text>
-            <TouchableOpacity onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal#disclaimer')}>
+            <TouchableOpacity onPress={() => Linking.openURL('https://mirrord1.vercel.app/legal.html#disclaimer')}>
               <Text style={styles.legalLink}>Medical Disclaimer</Text>
             </TouchableOpacity>
           </View>
