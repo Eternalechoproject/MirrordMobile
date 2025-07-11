@@ -19,6 +19,8 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { MoodScreen, GoalScreen } from './screens';
+import { PaywallScreen } from './PaywallScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Stack = createStackNavigator();
 const { width, height } = Dimensions.get('window');
@@ -101,6 +103,21 @@ const promptSets = {
 };
 
 
+
+// Helper function to get or create user ID
+async function getOrCreateUserId() {
+  try {
+    let userId = await AsyncStorage.getItem('userId');
+    if (!userId) {
+      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      await AsyncStorage.setItem('userId', userId);
+    }
+    return userId;
+  } catch (error) {
+    console.error('Error with userId:', error);
+    return 'anonymous';
+  }
+}
 
 // Enhanced Landing Screen with all desktop sections
 function LandingScreen({ navigation }) {
@@ -299,14 +316,20 @@ function NameScreen({ navigation }) {
   );
 }
 
-// Claude-style Chat Screen
+// Claude-style Chat Screen with Subscription Logic
 function ChatScreen({ route, navigation }) {
   const { name, mood, goal } = route.params;
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const scrollViewRef = useRef(null);
 
+  // Get userId on mount
+  useEffect(() => {
+    getOrCreateUserId().then(setUserId);
+  }, []);
 
   // Initialize with prompt
   useEffect(() => {
@@ -322,8 +345,20 @@ function ChatScreen({ route, navigation }) {
     }, 100);
   }, [messages]);
 
+  // Show trial status if in trial
+  useEffect(() => {
+    if (subscriptionStatus?.inTrial && subscriptionStatus?.daysLeftInTrial > 0) {
+      setMessages(prev => [...prev, {
+        id: 'trial_' + Date.now(),
+        text: `🎉 You have ${subscriptionStatus.daysLeftInTrial} days left in your free trial. Enjoying unlimited messages!`,
+        user: false,
+        isSystem: true
+      }]);
+    }
+  }, [subscriptionStatus]);
+
   const sendMessage = async () => {
-    if (!message.trim() || loading) return;
+    if (!message.trim() || loading || !userId) return;
     
     // Dismiss keyboard immediately
     Keyboard.dismiss();
@@ -334,10 +369,12 @@ function ChatScreen({ route, navigation }) {
     setLoading(true);
 
     try {
-      const conversationHistory = messages.map(msg => ({
-        role: msg.user ? 'user' : 'assistant',
-        content: msg.text
-      }));
+      const conversationHistory = messages
+        .filter(msg => !msg.isSystem)
+        .map(msg => ({
+          role: msg.user ? 'user' : 'assistant',
+          content: msg.text
+        }));
       conversationHistory.push({ role: 'user', content: userMessage });
 
       const response = await fetch(`${API_URL}/chat`, {
@@ -346,6 +383,7 @@ function ChatScreen({ route, navigation }) {
         body: JSON.stringify({ 
           history: conversationHistory,
           username: name,
+          userId: userId,
           mood,
           goal 
         })
@@ -353,14 +391,46 @@ function ChatScreen({ route, navigation }) {
 
       const data = await response.json();
       
-      setMessages(prev => [...prev, { 
-        id: Date.now(), 
-        text: data.reply || "I hear you. Tell me more about that.", 
-        user: false 
-      }]);
-      
+      // Update subscription status
+      if (data.subscription) {
+        setSubscriptionStatus(data.subscription);
+      }
 
-      
+      // Check if limit reached
+      if (data.limitReached && data.showPaywall) {
+        setMessages(prev => [...prev, { 
+          id: Date.now(), 
+          text: data.reply, 
+          user: false 
+        }]);
+        
+        // Navigate to paywall after a short delay
+        setTimeout(() => {
+          navigation.navigate('Paywall', {
+            trialEnded: data.trialEnded,
+            messagesUsedToday: data.messageCount
+          });
+        }, 1500);
+      } else {
+        setMessages(prev => [...prev, { 
+          id: Date.now(), 
+          text: data.reply || "I hear you. Tell me more about that.", 
+          user: false 
+        }]);
+
+        // Show message count for free users
+        if (data.subscription && !data.subscription.inTrial && !data.subscription.isPro) {
+          const remaining = 5 - data.subscription.messagesUsedToday;
+          if (remaining > 0 && remaining <= 2) {
+            setMessages(prev => [...prev, {
+              id: 'limit_' + Date.now(),
+              text: `📊 ${remaining} message${remaining === 1 ? '' : 's'} remaining today`,
+              user: false,
+              isSystem: true
+            }]);
+          }
+        }
+      }
     } catch (error) {
       setMessages(prev => [...prev, { 
         id: Date.now(), 
@@ -379,6 +449,16 @@ function ChatScreen({ route, navigation }) {
           <TouchableOpacity onPress={() => navigation.navigate('Landing')}>
             <Text style={styles.exitButton}>✕</Text>
           </TouchableOpacity>
+          
+          {/* Show subscription status */}
+          {subscriptionStatus && !subscriptionStatus.isPro && !subscriptionStatus.inTrial && (
+            <TouchableOpacity 
+              style={styles.upgradeButton}
+              onPress={() => navigation.navigate('Paywall')}
+            >
+              <Text style={styles.upgradeText}>Upgrade</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <ScrollView 
@@ -390,9 +470,13 @@ function ChatScreen({ route, navigation }) {
           {messages.map(msg => (
             <View key={msg.id} style={[
               styles.messageBubble,
-              msg.user ? styles.userBubble : styles.botBubble
+              msg.user ? styles.userBubble : styles.botBubble,
+              msg.isSystem && styles.systemBubble
             ]}>
-              <Text style={styles.messageText}>{msg.text}</Text>
+              <Text style={[
+                styles.messageText,
+                msg.isSystem && styles.systemText
+              ]}>{msg.text}</Text>
             </View>
           ))}
           {loading && (
@@ -448,6 +532,7 @@ export default function App() {
         <Stack.Screen name="Mood" component={MoodScreen} />
         <Stack.Screen name="Goal" component={GoalScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="Paywall" component={PaywallScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -818,5 +903,32 @@ const styles = StyleSheet.create({
     color: '#fff', // White arrow
     fontSize: 18,
     fontWeight: '600',
+  },
+  
+  // Subscription UI styles
+  upgradeButton: {
+    backgroundColor: '#ffd700',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 15,
+    position: 'absolute',
+    right: 60,
+    top: 20,
+  },
+  upgradeText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  systemBubble: {
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    alignSelf: 'center',
+    marginLeft: 20,
+    marginRight: 20,
+  },
+  systemText: {
+    color: '#ffd700',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
