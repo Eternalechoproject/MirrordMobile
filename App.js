@@ -15,13 +15,20 @@ import {
   Dimensions,
   SafeAreaView,
   Keyboard,
-  Linking
+  Linking,
+  Animated,
+  Easing,
+  Vibration,
+  ActivityIndicator
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { MoodScreen, GoalScreen } from './screens';
 import { PaywallScreen } from './PaywallScreen';
 import { EmailScreen } from './EmailScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 
 const Stack = createStackNavigator();
 const { width, height } = Dimensions.get('window');
@@ -103,7 +110,130 @@ const promptSets = {
   ]
 };
 
+// Typing Indicator Component
+function TypingIndicator() {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
 
+  useEffect(() => {
+    const animateDot = (dot, delay) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, {
+            toValue: 1,
+            duration: 400,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot, {
+            toValue: 0,
+            duration: 400,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+
+    animateDot(dot1, 0);
+    animateDot(dot2, 150);
+    animateDot(dot3, 300);
+  }, []);
+
+  return (
+    <View style={styles.typingContainer}>
+      <Animated.View style={[styles.typingDot, {
+        transform: [{ translateY: dot1.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, -10]
+        })}],
+        opacity: dot1.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.4, 1]
+        })
+      }]} />
+      <Animated.View style={[styles.typingDot, {
+        transform: [{ translateY: dot2.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, -10]
+        })}],
+        opacity: dot2.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.4, 1]
+        })
+      }]} />
+      <Animated.View style={[styles.typingDot, {
+        transform: [{ translateY: dot3.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, -10]
+        })}],
+        opacity: dot3.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.4, 1]
+        })
+      }]} />
+    </View>
+  );
+}
+
+// Animated Message Bubble Component
+function AnimatedMessage({ message, index, isNew }) {
+  const fadeAnim = useRef(new Animated.Value(isNew ? 0 : 1)).current;
+  const slideAnim = useRef(new Animated.Value(isNew ? 20 : 0)).current;
+  const scaleAnim = useRef(new Animated.Value(isNew ? 0.8 : 1)).current;
+
+  useEffect(() => {
+    if (isNew) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          delay: index * 50,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          delay: index * 50,
+          easing: Easing.out(Easing.back(1.2)),
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          delay: index * 50,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isNew]);
+
+  return (
+    <Animated.View style={[
+      styles.messageBubble,
+      message.user ? styles.userBubble : styles.botBubble,
+      message.isSystem && styles.systemBubble,
+      {
+        opacity: fadeAnim,
+        transform: [
+          { translateY: slideAnim },
+          { scale: scaleAnim }
+        ],
+      },
+    ]}>
+      <Text style={[
+        styles.messageText,
+        message.isSystem && styles.systemText
+      ]}>
+        {message.text}
+      </Text>
+    </Animated.View>
+  );
+}
 
 // Helper function to get or create user ID
 async function getOrCreateUserId() {
@@ -120,8 +250,33 @@ async function getOrCreateUserId() {
   }
 }
 
-// Enhanced Landing Screen with all desktop sections
+// Enhanced Landing Screen with animations
 function LandingScreen({ navigation }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        easing: Easing.out(Easing.back(1.2)),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const handleStartPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    navigation.navigate('Email');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView 
@@ -129,25 +284,39 @@ function LandingScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* Hero Section */}
+        {/* Hero Section with Animation */}
         <ImageBackground 
           source={require('./assets/Mainlogo1.png')} 
           style={styles.heroSection}
           resizeMode="contain"
         >
-          <View style={styles.heroOverlay}>
+          <Animated.View style={[
+            styles.heroOverlay,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }]
+            }
+          ]}>
             <Text style={styles.heroTitle}>Mental clarity{'\n'}without the fluff.</Text>
             <Text style={styles.heroSubtitle}>A grounded space for men who don't usually talk.</Text>
             <TouchableOpacity 
               style={styles.ctaButton}
-              onPress={() => navigation.navigate('Email')}
+              onPress={handleStartPress}
+              activeOpacity={0.8}
             >
-              <Text style={styles.ctaButtonText}>Start Conversation</Text>
+              <LinearGradient
+                colors={['#ffd700', '#ffed4e']}
+                style={styles.ctaGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.ctaButtonText}>Start Conversation</Text>
+              </LinearGradient>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </ImageBackground>
 
-        {/* Built Different Section */}
+        {/* Built Different Section with Glassmorphism */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Built different.</Text>
           <Text style={styles.sectionSubtitle}>
@@ -155,28 +324,34 @@ function LandingScreen({ navigation }) {
           </Text>
           
           <View style={styles.featuresContainer}>
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>🤝</Text>
-              <Text style={styles.featureTitle}>Human Tone</Text>
-              <Text style={styles.featureText}>
-                Like talking to a guy who's been through it. No buzzwords, no clichés.
-              </Text>
+            <View style={[styles.featureCard, styles.glassmorphism]}>
+              <BlurView intensity={20} style={styles.blurContainer}>
+                <Text style={styles.featureIcon}>🤝</Text>
+                <Text style={styles.featureTitle}>Human Tone</Text>
+                <Text style={styles.featureText}>
+                  Like talking to a guy who's been through it. No buzzwords, no clichés.
+                </Text>
+              </BlurView>
             </View>
             
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>🎯</Text>
-              <Text style={styles.featureTitle}>Direct Approach</Text>
-              <Text style={styles.featureText}>
-                Short responses that actually help. No endless analysis or fake wisdom.
-              </Text>
+            <View style={[styles.featureCard, styles.glassmorphism]}>
+              <BlurView intensity={20} style={styles.blurContainer}>
+                <Text style={styles.featureIcon}>🎯</Text>
+                <Text style={styles.featureTitle}>Direct Approach</Text>
+                <Text style={styles.featureText}>
+                  Short responses that actually help. No endless analysis or fake wisdom.
+                </Text>
+              </BlurView>
             </View>
             
-            <View style={styles.featureCard}>
-              <Text style={styles.featureIcon}>🔒</Text>
-              <Text style={styles.featureTitle}>Zero Judgment</Text>
-              <Text style={styles.featureText}>
-                Say what you need to say. Get heard without the moral lectures.
-              </Text>
+            <View style={[styles.featureCard, styles.glassmorphism]}>
+              <BlurView intensity={20} style={styles.blurContainer}>
+                <Text style={styles.featureIcon}>🔒</Text>
+                <Text style={styles.featureTitle}>Zero Judgment</Text>
+                <Text style={styles.featureText}>
+                  Say what you need to say. Get heard without the moral lectures.
+                </Text>
+              </BlurView>
             </View>
           </View>
         </View>
@@ -255,9 +430,15 @@ function LandingScreen({ navigation }) {
           <Text style={styles.footerTitle}>Ready to talk?</Text>
           <TouchableOpacity 
             style={styles.ctaButton}
-            onPress={() => navigation.navigate('Email')}
+            onPress={handleStartPress}
+            activeOpacity={0.8}
           >
-            <Text style={styles.ctaButtonText}>Start Conversation →</Text>
+            <LinearGradient
+              colors={['#ffd700', '#ffed4e']}
+              style={styles.ctaGradient}
+            >
+              <Text style={styles.ctaButtonText}>Start Conversation →</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -318,7 +499,7 @@ function NameScreen({ navigation, route }) {
   );
 }
 
-// Claude-style Chat Screen with Subscription Logic
+// Enhanced Chat Screen with all features
 function ChatScreen({ route, navigation }) {
   const { name, mood, goal, email } = route.params;
   const [message, setMessage] = useState('');
@@ -326,6 +507,7 @@ function ChatScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const [newMessageIndices, setNewMessageIndices] = useState([]);
   const scrollViewRef = useRef(null);
 
   // Get userId on mount
@@ -338,6 +520,7 @@ function ChatScreen({ route, navigation }) {
     const prompts = promptSets[goal] || promptSets.clarity;
     const initialPrompt = prompts[Math.floor(Math.random() * prompts.length)];
     setMessages([{ id: 1, text: initialPrompt, user: false }]);
+    setNewMessageIndices([0]);
   }, [goal]);
 
   // Auto scroll when messages update
@@ -357,17 +540,32 @@ function ChatScreen({ route, navigation }) {
         isSystem: true
       }]);
     }
+    
+    // Show memory status for Pro/Premium users
+    if (subscriptionStatus?.features?.hasMemory && subscriptionStatus?.features?.memoryCount > 0) {
+      setMessages(prev => [...prev, {
+        id: 'memory_' + Date.now(),
+        text: `🧠 I remember our previous conversations. Let's continue where we left off.`,
+        user: false,
+        isSystem: true
+      }]);
+    }
   }, [subscriptionStatus]);
 
   const sendMessage = async () => {
     if (!message.trim() || loading || !userId) return;
+    
+    // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     // Dismiss keyboard immediately
     Keyboard.dismiss();
     
     const userMessage = message;
     setMessage('');
-    setMessages(prev => [...prev, { id: Date.now(), text: userMessage, user: true }]);
+    const userMessageId = Date.now();
+    setMessages(prev => [...prev, { id: userMessageId, text: userMessage, user: true }]);
+    setNewMessageIndices(prev => [...prev, messages.length]);
     setLoading(true);
 
     try {
@@ -406,12 +604,17 @@ function ChatScreen({ route, navigation }) {
           text: data.reply, 
           user: false 
         }]);
+        setNewMessageIndices(prev => [...prev, messages.length + 1]);
+        
+        // Haptic feedback for limit
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         
         // Navigate to paywall after a short delay
         setTimeout(() => {
           navigation.navigate('Paywall', {
             trialEnded: data.trialEnded,
-            messagesUsedToday: data.messageCount
+            messagesUsedToday: data.messageCount,
+            currentTier: data.subscriptionTier
           });
         }, 1500);
       } else {
@@ -420,9 +623,10 @@ function ChatScreen({ route, navigation }) {
           text: data.reply || "I hear you. Tell me more about that.", 
           user: false 
         }]);
+        setNewMessageIndices(prev => [...prev, messages.length + 1]);
 
         // Show message count for free users
-        if (data.subscription && !data.subscription.inTrial && !data.subscription.isPro) {
+        if (data.subscription && !data.subscription.inTrial && data.subscription.tier === 'free') {
           const remaining = 5 - data.subscription.messagesUsedToday;
           if (remaining > 0 && remaining <= 2) {
             setMessages(prev => [...prev, {
@@ -431,6 +635,7 @@ function ChatScreen({ route, navigation }) {
               user: false,
               isSystem: true
             }]);
+            setNewMessageIndices(prev => [...prev, messages.length + 2]);
           }
         }
       }
@@ -440,6 +645,7 @@ function ChatScreen({ route, navigation }) {
         text: "Something went wrong. Want to try that again?", 
         user: false 
       }]);
+      setNewMessageIndices(prev => [...prev, messages.length + 1]);
     }
     
     setLoading(false);
@@ -454,13 +660,33 @@ function ChatScreen({ route, navigation }) {
           </TouchableOpacity>
           
           {/* Show subscription status */}
-          {subscriptionStatus && !subscriptionStatus.isPro && !subscriptionStatus.inTrial && (
-            <TouchableOpacity 
-              style={styles.upgradeButton}
-              onPress={() => navigation.navigate('Paywall')}
-            >
-              <Text style={styles.upgradeText}>Upgrade</Text>
-            </TouchableOpacity>
+          {subscriptionStatus && (
+            <View style={styles.subscriptionIndicator}>
+              {subscriptionStatus.tier === 'pro' && (
+                <LinearGradient
+                  colors={['#ffd700', '#ffed4e']}
+                  style={styles.tierBadge}
+                >
+                  <Text style={styles.tierBadgeText}>PRO</Text>
+                </LinearGradient>
+              )}
+              {subscriptionStatus.tier === 'premium' && (
+                <LinearGradient
+                  colors={['#00d4ff', '#0099ff']}
+                  style={styles.tierBadge}
+                >
+                  <Text style={styles.tierBadgeText}>PREMIUM</Text>
+                </LinearGradient>
+              )}
+              {subscriptionStatus.tier === 'free' && !subscriptionStatus.inTrial && (
+                <TouchableOpacity 
+                  style={styles.upgradeButton}
+                  onPress={() => navigation.navigate('Paywall', { currentTier: 'free' })}
+                >
+                  <Text style={styles.upgradeText}>Upgrade</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           )}
         </View>
 
@@ -470,21 +696,17 @@ function ChatScreen({ route, navigation }) {
           contentContainerStyle={styles.messagesContent}
           keyboardShouldPersistTaps="handled"
         >
-          {messages.map(msg => (
-            <View key={msg.id} style={[
-              styles.messageBubble,
-              msg.user ? styles.userBubble : styles.botBubble,
-              msg.isSystem && styles.systemBubble
-            ]}>
-              <Text style={[
-                styles.messageText,
-                msg.isSystem && styles.systemText
-              ]}>{msg.text}</Text>
-            </View>
+          {messages.map((msg, index) => (
+            <AnimatedMessage
+              key={msg.id}
+              message={msg}
+              index={newMessageIndices.indexOf(index)}
+              isNew={newMessageIndices.includes(index)}
+            />
           ))}
           {loading && (
             <View style={[styles.messageBubble, styles.botBubble]}>
-              <Text style={styles.messageText}>...</Text>
+              <TypingIndicator />
             </View>
           )}
         </ScrollView>
@@ -515,6 +737,7 @@ function ChatScreen({ route, navigation }) {
               style={[styles.sendButton, (!message.trim() || loading) && styles.sendButtonDisabled]}
               onPress={sendMessage}
               disabled={!message.trim() || loading}
+              activeOpacity={0.7}
             >
               <Text style={styles.sendButtonText}>↑</Text>
             </TouchableOpacity>
@@ -529,7 +752,29 @@ function ChatScreen({ route, navigation }) {
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator 
+        screenOptions={{ 
+          headerShown: false,
+          cardStyleInterpolator: ({ current, layouts }) => {
+            return {
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+                opacity: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 1],
+                }),
+              },
+            };
+          },
+        }}
+      >
         <Stack.Screen name="Landing" component={LandingScreen} />
         <Stack.Screen name="Email" component={EmailScreen} />
         <Stack.Screen name="Name" component={NameScreen} />
@@ -613,17 +858,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   
-  // Feature Cards
+  // Feature Cards with Glassmorphism
   featuresContainer: {
     gap: 20,
   },
   featureCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 20,
-    padding: 25,
+    marginBottom: 15,
+    overflow: 'hidden',
+  },
+  glassmorphism: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    marginBottom: 15,
+  },
+  blurContainer: {
+    padding: 25,
   },
   featureIcon: {
     fontSize: 40,
@@ -720,17 +970,19 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   
-  // CTA Button
+  // Enhanced CTA Button
   ctaButton: {
-    backgroundColor: '#ffd700',
-    paddingHorizontal: 40,
-    paddingVertical: 18,
     borderRadius: 30,
+    overflow: 'hidden',
     shadowColor: '#ffd700',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 10,
+  },
+  ctaGradient: {
+    paddingHorizontal: 40,
+    paddingVertical: 18,
   },
   ctaButtonText: {
     color: '#000',
@@ -738,6 +990,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1,
+    textAlign: 'center',
   },
   
   // Legal Section
@@ -805,7 +1058,7 @@ const styles = StyleSheet.create({
     borderColor: '#333',
   },
   
-  // Claude-style Chat
+  // Enhanced Chat Styles
   chatContainer: {
     flex: 1,
     backgroundColor: '#000',
@@ -815,7 +1068,8 @@ const styles = StyleSheet.create({
   },
   chatHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 15,
     paddingTop: Platform.OS === 'ios' ? 5 : 15,
     borderBottomWidth: 0.5,
@@ -825,6 +1079,32 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     padding: 5,
+  },
+  subscriptionIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tierBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  tierBadgeText: {
+    color: '#000',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  upgradeButton: {
+    backgroundColor: '#ffd700',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 15,
+  },
+  upgradeText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '600',
   },
   messagesContainer: {
     flex: 1,
@@ -840,7 +1120,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   userBubble: {
-    backgroundColor: '#8E8E93', // Gray instead of blue
+    backgroundColor: '#8E8E93',
     alignSelf: 'flex-end',
     marginLeft: 60,
   },
@@ -849,13 +1129,40 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginRight: 60,
   },
+  systemBubble: {
+    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    alignSelf: 'center',
+    marginLeft: 20,
+    marginRight: 20,
+  },
   messageText: {
     color: '#fff',
     fontSize: 16,
     lineHeight: 20,
   },
+  systemText: {
+    color: '#ffd700',
+    fontSize: 14,
+    textAlign: 'center',
+  },
   
-  // Claude-style keyboard input
+  // Typing Indicator Styles
+  typingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 4,
+  },
+  typingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ffd700',
+  },
+  
+  // Input styles
   keyboardAvoidingView: {
     position: 'absolute',
     left: 0,
@@ -887,52 +1194,25 @@ const styles = StyleSheet.create({
     maxHeight: 120,
     minHeight: 40,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)', // Gray border
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   sendButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#000', // Black background
+    backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 2,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)', // White border
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   sendButtonDisabled: {
     opacity: 0.3,
   },
   sendButtonText: {
-    color: '#fff', // White arrow
+    color: '#fff',
     fontSize: 18,
     fontWeight: '600',
-  },
-  
-  // Subscription UI styles
-  upgradeButton: {
-    backgroundColor: '#ffd700',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 15,
-    position: 'absolute',
-    right: 60,
-    top: 20,
-  },
-  upgradeText: {
-    color: '#000',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  systemBubble: {
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
-    alignSelf: 'center',
-    marginLeft: 20,
-    marginRight: 20,
-  },
-  systemText: {
-    color: '#ffd700',
-    fontSize: 14,
-    textAlign: 'center',
   },
 });
