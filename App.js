@@ -555,8 +555,8 @@ function ChatScreen({ route, navigation }) {
   const sendMessage = async () => {
     if (!message.trim() || loading || !userId) return;
     
-    // Haptic feedback
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Haptic feedback when sending - stronger thud
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     // Dismiss keyboard immediately
     Keyboard.dismiss();
@@ -618,12 +618,21 @@ function ChatScreen({ route, navigation }) {
           });
         }, 1500);
       } else {
+        // Add assistant's reply
         setMessages(prev => [...prev, { 
           id: Date.now(), 
           text: data.reply || "I hear you. Tell me more about that.", 
           user: false 
         }]);
         setNewMessageIndices(prev => [...prev, messages.length + 1]);
+
+        // Haptic pattern when receiving message (like ChatGPT)
+        const words = data.reply.split(' ').slice(0, 3); // First 3 words
+        words.forEach((_, index) => {
+          setTimeout(() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }, index * 100); // Slight delay between each vibration
+        });
 
         // Show message count for free users
         if (data.subscription && !data.subscription.inTrial && data.subscription.tier === 'free') {
