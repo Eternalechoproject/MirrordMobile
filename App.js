@@ -24,7 +24,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { MoodScreen, GoalScreen } from './screens';
 import { PaywallScreen } from './PaywallScreen';
-import { EmailScreen } from './EmailScreen';
+import { AuthScreen } from './AuthScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -274,7 +274,7 @@ function LandingScreen({ navigation }) {
 
   const handleStartPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    navigation.navigate('Email');
+    navigation.navigate('Auth');
   };
 
   return (
@@ -466,10 +466,10 @@ function LandingScreen({ navigation }) {
   );
 }
 
-// Name Screen
+// Name Screen - Now receives userId from Auth
 function NameScreen({ navigation, route }) {
   const [name, setName] = useState('');
-  const email = route.params?.email;
+  const { email, userId } = route.params;
   
   return (
     <ImageBackground 
@@ -489,7 +489,7 @@ function NameScreen({ navigation, route }) {
         />
         <TouchableOpacity 
           style={[styles.button, !name && styles.buttonDisabled]}
-          onPress={() => name && navigation.navigate('Mood', { name, email })}
+          onPress={() => name && navigation.navigate('Mood', { name, email, userId })}
           disabled={!name}
         >
           <Text style={styles.buttonText}>Next</Text>
@@ -501,19 +501,13 @@ function NameScreen({ navigation, route }) {
 
 // Enhanced Chat Screen with all features
 function ChatScreen({ route, navigation }) {
-  const { name, mood, goal, email } = route.params;
+  const { name, mood, goal, email, userId } = route.params;
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [userId, setUserId] = useState(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [newMessageIndices, setNewMessageIndices] = useState([]);
   const scrollViewRef = useRef(null);
-
-  // Get userId on mount
-  useEffect(() => {
-    getOrCreateUserId().then(setUserId);
-  }, []);
 
   // Initialize with prompt
   useEffect(() => {
@@ -787,7 +781,7 @@ export default function App() {
         }}
       >
         <Stack.Screen name="Landing" component={LandingScreen} />
-        <Stack.Screen name="Email" component={EmailScreen} />
+        <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="Name" component={NameScreen} />
         <Stack.Screen name="Mood" component={MoodScreen} />
         <Stack.Screen name="Goal" component={GoalScreen} />
